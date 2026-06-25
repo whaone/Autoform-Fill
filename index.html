@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Form Builder Autofill</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">⚡</span>
+      <div>
+        <h1>Form Builder Autofill</h1>
+        <p class="subtitle">Buat field custom, simpan profil, lalu isi web form lain secara otomatis.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ============ KIRI: Daftar Profil ============ -->
+    <aside class="panel panel-profiles">
+      <div class="panel-head">
+        <h2>Profil Tersimpan</h2>
+        <button id="btnNewProfile" class="btn btn-primary btn-sm" type="button">+ Profil Baru</button>
+      </div>
+      <ul id="profileList" class="profile-list"></ul>
+
+      <div class="panel-foot">
+        <button id="btnExport" class="btn btn-ghost btn-sm" type="button">⬇ Export</button>
+        <button id="btnImport" class="btn btn-ghost btn-sm" type="button">⬆ Import</button>
+        <input id="importFile" type="file" accept="application/json" hidden />
+      </div>
+    </aside>
+
+    <!-- ============ TENGAH: Editor Profil ============ -->
+    <section class="panel panel-editor">
+      <div class="panel-head">
+        <h2>Editor Profil</h2>
+        <span id="editorStatus" class="status"></span>
+      </div>
+
+      <div class="field-row">
+        <label for="profileName">Nama Profil</label>
+        <input id="profileName" type="text" placeholder="cth: Data Pribadi Saya" />
+      </div>
+
+      <!-- ====== Pengaturan Layout Grid ====== -->
+      <div class="layout-setup">
+        <div class="dim">
+          <label for="gridRows">Baris</label>
+          <input id="gridRows" type="number" min="1" max="20" value="5" />
+        </div>
+        <span class="times">×</span>
+        <div class="dim">
+          <label for="gridCols">Kolom</label>
+          <input id="gridCols" type="number" min="1" max="6" value="2" />
+        </div>
+        <button id="btnApplyLayout" class="btn btn-secondary btn-sm" type="button">Terapkan Layout</button>
+        <span id="gridInfo" class="grid-info"></span>
+      </div>
+
+      <p class="hint">
+        Tentukan jumlah <strong>baris × kolom</strong> form, lalu klik <strong>Terapkan Layout</strong>.
+        Tiap sel adalah satu field: isi <strong>Label</strong>, <strong>Tipe</strong>, <strong>Nilai</strong>,
+        dan <strong>Cocokkan dengan</strong> (kata kunci pendeteksi input di web target, dipisah koma —
+        cth: <code>email, e-mail, mail</code>).
+      </p>
+
+      <div id="fieldsContainer" class="fields-container"></div>
+
+      <div class="editor-actions">
+        <button id="btnSaveProfile" class="btn btn-primary" type="button">💾 Simpan Profil</button>
+        <button id="btnDeleteProfile" class="btn btn-danger" type="button">🗑 Hapus Profil</button>
+      </div>
+    </section>
+
+    <!-- ============ KANAN: Autofill / Bookmarklet ============ -->
+    <aside class="panel panel-output">
+      <div class="panel-head">
+        <h2>Autofill</h2>
+      </div>
+
+      <p class="hint">
+        Tarik tombol di bawah ke <strong>bookmarks bar</strong> browser kamu.
+        Lalu buka website yang punya form, klik bookmark ini, dan form akan terisi otomatis
+        memakai profil yang sedang dibuka.
+      </p>
+
+      <div class="bookmarklet-box">
+        <a id="bookmarkletLink" class="bookmarklet" href="#">📌 Autofill Form</a>
+      </div>
+
+      <details class="adv">
+        <summary>Cara lain (Salin kode)</summary>
+        <p class="hint">Salin kode di bawah, buat bookmark baru, dan tempel sebagai URL-nya.</p>
+        <textarea id="bookmarkletCode" class="code" readonly rows="6"></textarea>
+        <button id="btnCopyCode" class="btn btn-ghost btn-sm" type="button">Salin Kode</button>
+      </details>
+
+      <hr />
+
+      <h3>Pratinjau Data</h3>
+      <pre id="preview" class="preview">{}</pre>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
