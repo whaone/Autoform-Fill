@@ -40,6 +40,7 @@ const els = {
   preview: $("preview"),
   bookmarkletLink: $("bookmarkletLink"),
   bookmarkletCode: $("bookmarkletCode"),
+  consoleCode: $("consoleCode"),
   importFile: $("importFile"),
   toast: $("toast"),
 };
@@ -471,19 +472,16 @@ function buildBookmarklet() {
   const fields = p ? p.fields.filter((f) => f.value) : [];
   const payload = JSON.stringify(fields);
   // bungkus runtime + data jadi satu IIFE
-  const code =
-    "javascript:(function(){var __f=" +
-    payload +
-    ";(" +
-    autofillRuntime.toString() +
-    ")(__f);})();";
-  return code;
+  const body =
+    "(function(){var __f=" + payload + ";(" + autofillRuntime.toString() + ")(__f);})();";
+  return { bookmarklet: "javascript:" + body, console: body };
 }
 
 function updateBookmarklet() {
   const code = buildBookmarklet();
-  els.bookmarkletLink.href = code;
-  els.bookmarkletCode.value = code;
+  els.bookmarkletLink.href = code.bookmarklet;
+  els.bookmarkletCode.value = code.bookmarklet;
+  if (els.consoleCode) els.consoleCode.value = code.console;
 }
 
 // ---------- Export / Import ----------
@@ -568,6 +566,13 @@ function init() {
     // klik langsung tidak menjalankan di app ini; arahkan user agar drag
     e.preventDefault();
     toast("Tarik tombol ini ke bookmarks bar, lalu klik di website target.");
+  });
+  $("btnCopyConsole").addEventListener("click", () => {
+    els.consoleCode.select();
+    navigator.clipboard.writeText(els.consoleCode.value).then(
+      () => toast("Kode Console disalin. Tempel di DevTools Console (F12)."),
+      () => toast("Gagal menyalin.", true)
+    );
   });
 
   // pilih profil pertama jika ada
