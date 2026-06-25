@@ -40,6 +40,7 @@ const els = {
   preview: $("preview"),
   bookmarkletLink: $("bookmarkletLink"),
   bookmarkletCode: $("bookmarkletCode"),
+  consoleCode: $("consoleCode"),
   importFile: $("importFile"),
   toast: $("toast"),
 };
@@ -317,68 +318,103 @@ function updatePreview() {
 
 // ---------- Bookmarklet generation ----------
 // Fungsi ini di-stringify lalu dijalankan di halaman target.
+// Mode "watch": memantau halaman selama beberapa detik supaya form yang
+// muncul belakangan (popup/modal) ikut terisi. Juga menembus iframe (same-origin)
+// dan shadow DOM.
 function autofillRuntime(fields) {
-  const norm = (s) => (s || "").toString().toLowerCase().replace(/[^a-z0-9]/g, "");
-  let filled = 0;
+  var DURATION = 25000; // lama memantau (ms)
+  var norm = function (s) {
+    return (s || "").toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+  };
 
-  // kumpulkan kandidat input
-  const inputs = Array.from(
-    document.querySelectorAll("input, textarea, select")
-  ).filter((el) => {
-    const t = (el.type || "").toLowerCase();
-    return !["hidden", "submit", "button", "reset", "image", "file"].includes(t);
-  });
-
-  // ambil teks label terkait sebuah input
-  function labelText(el) {
-    let txt = "";
-    if (el.id) {
-      const lab = document.querySelector(`label[for="${CSS.escape(el.id)}"]`);
-      if (lab) txt += " " + lab.textContent;
+  // Kumpulkan SEMUA input dari document, shadow DOM, dan iframe same-origin.
+  function collectInputs(root, acc) {
+    acc = acc || [];
+    try {
+      root.querySelectorAll("input, textarea, select").forEach(function (el) {
+        acc.push(el);
+      });
+      // shadow DOM
+      root.querySelectorAll("*").forEach(function (el) {
+        if (el.shadowRoot) collectInputs(el.shadowRoot, acc);
+      });
+      // iframe / frame (hanya bisa diakses kalau same-origin)
+      root.querySelectorAll("iframe, frame").forEach(function (fr) {
+        try {
+          var doc = fr.contentDocument || (fr.contentWindow && fr.contentWindow.document);
+          if (doc) collectInputs(doc, acc);
+        } catch (e) {
+          /* cross-origin, lewati */
+        }
+      });
+    } catch (e) {
+      /* abaikan */
     }
-    const wrap = el.closest("label");
+    return acc;
+  }
+
+  function isFillable(el) {
+    var t = (el.type || "").toLowerCase();
+    if (["hidden", "submit", "button", "reset", "image", "file"].indexOf(t) >= 0) return false;
+    if (el.disabled || el.readOnly) return false;
+    // harus terlihat (popup yang tersembunyi dilewati)
+    var r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return false;
+    return true;
+  }
+
+  function labelText(el) {
+    var txt = "";
+    try {
+      if (el.id) {
+        var sel = (window.CSS && CSS.escape) ? CSS.escape(el.id) : el.id;
+        var lab = document.querySelector('label[for="' + sel + '"]');
+        if (lab) txt += " " + lab.textContent;
+      }
+    } catch (e) {}
+    var wrap = el.closest && el.closest("label");
     if (wrap) txt += " " + wrap.textContent;
     return txt;
   }
 
   function haystack(el) {
     return norm(
-      [el.name, el.id, el.placeholder, el.getAttribute("aria-label"), labelText(el)]
+      [el.name, el.id, el.placeholder, el.getAttribute && el.getAttribute("aria-label"), labelText(el)]
         .filter(Boolean)
         .join(" ")
     );
   }
 
   function setValue(el, value) {
-    const proto = el.tagName === "TEXTAREA"
+    var proto = el.tagName === "TEXTAREA"
       ? window.HTMLTextAreaElement.prototype
       : window.HTMLInputElement.prototype;
-    const setter = Object.getOwnPropertyDescriptor(proto, "value");
-    if (setter && setter.set) setter.set.call(el, value);
+    var d = Object.getOwnPropertyDescriptor(proto, "value");
+    if (d && d.set) d.set.call(el, value);
     else el.value = value;
     el.dispatchEvent(new Event("input", { bubbles: true }));
     el.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  fields.forEach((f) => {
-    if (!f.value) return;
-    const keywords = (f.match || f.label || "")
-      .split(",")
-      .map((k) => norm(k))
-      .filter(Boolean);
-    if (keywords.length === 0) return;
+  var total = 0;
+  function fillOnce() {
+    var inputs = collectInputs(document, []).filter(isFillable);
+    fields.forEach(function (f) {
+      if (!f.value) return;
+      var keys = (f.match || f.label || "").split(",").map(norm).filter(Boolean);
+      if (!keys.length) return;
 
-    const target = inputs.find((el) => {
-      if (el.dataset._afDone) return false;
-      const hay = haystack(el);
-      return keywords.some((k) => hay.includes(k));
-    });
+      var target = inputs.find(function (el) {
+        if (el.dataset && el.dataset._afDone) return false;
+        var hay = haystack(el);
+        return keys.some(function (k) { return hay.indexOf(k) >= 0; });
+      });
+      if (!target) return;
 
-    if (target) {
       if (target.tagName === "SELECT") {
-        const opt = Array.from(target.options).find(
-          (o) => norm(o.value) === norm(f.value) || norm(o.textContent) === norm(f.value)
-        );
+        var opt = Array.prototype.slice.call(target.options).find(function (o) {
+          return norm(o.value) === norm(f.value) || norm(o.textContent) === norm(f.value);
+        });
         if (opt) {
           target.value = opt.value;
           target.dispatchEvent(new Event("change", { bubbles: true }));
@@ -386,13 +422,49 @@ function autofillRuntime(fields) {
       } else {
         setValue(target, f.value);
       }
-      target.dataset._afDone = "1";
+      if (target.dataset) target.dataset._afDone = "1";
       target.style.outline = "2px solid #2dd4bf";
-      filled++;
-    }
-  });
+      total++;
+    });
+  }
 
-  alert("Autofill selesai. " + filled + " field terisi.");
+  // Banner status (menggantikan alert yang memblokir)
+  var banner = document.createElement("div");
+  banner.style.cssText =
+    "position:fixed;z-index:2147483647;bottom:16px;right:16px;background:#5b7cfa;color:#fff;" +
+    "padding:10px 14px;border-radius:10px;font:600 13px system-ui,sans-serif;" +
+    "box-shadow:0 6px 20px rgba(0,0,0,.4);max-width:280px";
+  document.body.appendChild(banner);
+  function paint(active) {
+    banner.textContent =
+      (active ? "🔎 Autofill memantau form… " : "✅ Autofill selesai. ") + total + " field terisi.";
+  }
+
+  fillOnce();
+  paint(true);
+
+  // Pantau DOM: isi form begitu popup/modal muncul (debounce).
+  var pending = false;
+  var obs = new MutationObserver(function () {
+    if (pending) return;
+    pending = true;
+    setTimeout(function () {
+      pending = false;
+      fillOnce();
+      paint(true);
+    }, 150);
+  });
+  try {
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) {}
+
+  setTimeout(function () {
+    obs.disconnect();
+    paint(false);
+    setTimeout(function () {
+      if (banner.parentNode) banner.parentNode.removeChild(banner);
+    }, 5000);
+  }, DURATION);
 }
 
 function buildBookmarklet() {
@@ -400,19 +472,16 @@ function buildBookmarklet() {
   const fields = p ? p.fields.filter((f) => f.value) : [];
   const payload = JSON.stringify(fields);
   // bungkus runtime + data jadi satu IIFE
-  const code =
-    "javascript:(function(){var __f=" +
-    payload +
-    ";(" +
-    autofillRuntime.toString() +
-    ")(__f);})();";
-  return code;
+  const body =
+    "(function(){var __f=" + payload + ";(" + autofillRuntime.toString() + ")(__f);})();";
+  return { bookmarklet: "javascript:" + body, console: body };
 }
 
 function updateBookmarklet() {
   const code = buildBookmarklet();
-  els.bookmarkletLink.href = code;
-  els.bookmarkletCode.value = code;
+  els.bookmarkletLink.href = code.bookmarklet;
+  els.bookmarkletCode.value = code.bookmarklet;
+  if (els.consoleCode) els.consoleCode.value = code.console;
 }
 
 // ---------- Export / Import ----------
@@ -497,6 +566,13 @@ function init() {
     // klik langsung tidak menjalankan di app ini; arahkan user agar drag
     e.preventDefault();
     toast("Tarik tombol ini ke bookmarks bar, lalu klik di website target.");
+  });
+  $("btnCopyConsole").addEventListener("click", () => {
+    els.consoleCode.select();
+    navigator.clipboard.writeText(els.consoleCode.value).then(
+      () => toast("Kode Console disalin. Tempel di DevTools Console (F12)."),
+      () => toast("Gagal menyalin.", true)
+    );
   });
 
   // pilih profil pertama jika ada

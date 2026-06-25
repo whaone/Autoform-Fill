@@ -199,6 +199,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--p
 }
 .bookmarklet:hover { background: var(--primary-2); }
 .adv { margin-top: 8px; }
+.console-box {
+  margin: 8px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--secondary);
+  border-radius: 10px;
+  background: rgba(45, 212, 191, 0.06);
+}
+.console-box h3 { color: var(--secondary); margin: 0 0 6px; }
+.console-box textarea { margin-top: 8px; }
 .adv summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .code { font-family: "Consolas", monospace; font-size: 11px; margin-top: 8px; }
 hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }

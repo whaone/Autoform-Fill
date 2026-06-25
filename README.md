@@ -23,6 +23,16 @@ Web app (HTML + CSS + JavaScript murni) untuk membuat form custom dan mengisi we
 
 Bookmarklet mencocokkan kata kunci pada kolom "Cocokkan dengan" dengan atribut `name`, `id`, `placeholder`, `aria-label`, dan teks `<label>` dari setiap input di halaman target. Makin spesifik kata kuncinya, makin akurat pencocokannya.
 
+### Form popup / modal
+
+Bookmarklet berjalan dalam **mode pantau** selama ±25 detik. Untuk form yang muncul sebagai popup/modal:
+
+1. Klik bookmark **lebih dulu**.
+2. Klik tombol pembuka form (mis. "produk baru").
+3. Form akan terisi otomatis begitu popup muncul.
+
+Bookmarklet juga dapat menembus **iframe** (same-origin) dan **shadow DOM**, serta menampilkan banner status (bukan `alert` yang memblokir).
+
 ## File
 
 | File | Keterangan |

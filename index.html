@@ -83,16 +83,31 @@
 
       <p class="hint">
         Tarik tombol di bawah ke <strong>bookmarks bar</strong> browser kamu.
-        Lalu buka website yang punya form, klik bookmark ini, dan form akan terisi otomatis
-        memakai profil yang sedang dibuka.
+      </p>
+      <p class="hint">
+        <strong>Untuk form popup/modal:</strong> klik bookmark <em>lebih dulu</em>, lalu klik tombol
+        "produk baru" / pembuka form. Bookmarklet memantau halaman ±25 detik dan akan mengisi form
+        secara otomatis begitu popup muncul. Juga bisa menembus <strong>iframe</strong> (same-origin)
+        dan <strong>shadow DOM</strong>.
       </p>
 
       <div class="bookmarklet-box">
         <a id="bookmarkletLink" class="bookmarklet" href="#">📌 Autofill Form</a>
       </div>
 
+      <div class="console-box">
+        <h3>Cara paling andal: lewat Console</h3>
+        <p class="hint">
+          Jika bookmarklet tidak bereaksi (sering karena CSP di web lokal), pakai cara ini:
+          buka popup form di web target → tekan <code>F12</code> → tab <strong>Console</strong> →
+          tempel kode di bawah → <strong>Enter</strong>.
+        </p>
+        <button id="btnCopyConsole" class="btn btn-primary btn-sm" type="button">📋 Salin Kode untuk Console</button>
+        <textarea id="consoleCode" class="code" readonly rows="5"></textarea>
+      </div>
+
       <details class="adv">
-        <summary>Cara lain (Salin kode)</summary>
+        <summary>Cara lain (bookmark manual)</summary>
         <p class="hint">Salin kode di bawah, buat bookmark baru, dan tempel sebagai URL-nya.</p>
         <textarea id="bookmarkletCode" class="code" readonly rows="6"></textarea>
         <button id="btnCopyCode" class="btn btn-ghost btn-sm" type="button">Salin Kode</button>
