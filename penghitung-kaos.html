@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Penghitung Kaos</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --surface: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --border: #e5e7eb;
+      --danger: #dc2626;
+      --highlight: #ecfdf5;
+      --highlight-border: #10b981;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    /* Header */
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { margin: 0; font-size: 1.9rem; }
+    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 0.95rem; }
+
+    /* Summary cards */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: var(--shadow);
+    }
+    .summary-card.highlight {
+      background: var(--highlight);
+      border-color: var(--highlight-border);
+    }
+    .summary-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .summary-value { font-size: 1.7rem; font-weight: 700; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 { margin: 0 0 16px; font-size: 1.15rem; }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1.2fr 1.1fr 1fr 1fr;
+      gap: 14px;
+      align-items: end;
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+    .field input, .field select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+    .form-actions { grid-column: 1 / -1; display: flex; gap: 10px; }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.05s, opacity 0.15s;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: #f3f4f6; }
+    .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+    .btn-outline:hover { background: #eef2ff; }
+    .btn-danger-outline { background: #fff; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger-outline:hover { background: #fef2f2; }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search {
+      flex: 1;
+      min-width: 200px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .search:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+    .toolbar-actions { display: flex; gap: 10px; }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--primary); color: var(--primary); }
+    .tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .tab .count {
+      font-weight: 700;
+      opacity: 0.85;
+      margin-left: 4px;
+    }
+
+    /* Badge kategori */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-dewasa { background: #e0e7ff; color: #3730a3; }
+    .badge-anak { background: #fce7f3; color: #9d174d; }
+
+    /* Table */
+    .table-card { padding: 0; overflow: hidden; }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+    th {
+      background: #f9fafb;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th[data-sort]:hover { color: var(--primary); }
+    tbody tr:hover { background: #fafafa; }
+    .num { text-align: right; }
+    td.num { font-variant-numeric: tabular-nums; }
+    .total-cell { font-weight: 700; }
+    .actions-col { text-align: center; cursor: default; }
+    .color-tag { display: inline-flex; align-items: center; gap: 6px; }
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+    .row-actions { display: flex; gap: 6px; justify-content: center; }
+    .icon-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .icon-btn.edit { color: var(--primary); }
+    .icon-btn.edit:hover { background: #eef2ff; }
+    .icon-btn.delete { color: var(--danger); }
+    .icon-btn.delete:hover { background: #fef2f2; }
+
+    /* Empty state */
+    .empty-state { padding: 40px 20px; text-align: center; color: var(--muted); }
+
+    .footer { text-align: center; color: var(--muted); margin-top: 8px; }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      .summary { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 460px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>👕 Penghitung Kaos</h1>
+      <p class="subtitle">Catat kaos berdasarkan warna, nama design, jumlah, dan kelebihan qty</p>
+    </header>
+
+    <!-- Ringkasan -->
+    <section class="summary" id="summary">
+      <div class="summary-card">
+        <span class="summary-label">Total Item</span>
+        <span class="summary-value" id="totalItems">0</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Total Jumlah</span>
+        <span class="summary-value" id="totalQty">0</span>
+      </div>
+      <div class="summary-card">
+        <span class="summary-label">Total Kelebihan</span>
+        <span class="summary-value" id="totalExtra">0</span>
+      </div>
+      <div class="summary-card highlight">
+        <span class="summary-label">Total Keseluruhan</span>
+        <span class="summary-value" id="grandTotal">0</span>
+      </div>
+    </section>
+
+    <!-- Form input -->
+    <section class="card">
+      <h2 id="formTitle">Tambah Data Kaos</h2>
+      <form id="kaosForm" class="form-grid" autocomplete="off">
+        <input type="hidden" id="editId" value="" />
+        <div class="field">
+          <label for="design">Nama Design</label>
+          <input type="text" id="design" placeholder="cth. Logo Tim A" required />
+        </div>
+        <div class="field">
+          <label for="color">Warna</label>
+          <input type="text" id="color" placeholder="cth. Hitam" required list="colorList" />
+          <datalist id="colorList"></datalist>
+        </div>
+        <div class="field">
+          <label for="category">Kategori</label>
+          <select id="category">
+            <option value="dewasa">Dewasa</option>
+            <option value="anak">Anak</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="qty">Jumlah (Qty)</label>
+          <input type="number" id="qty" min="0" step="1" placeholder="0" required />
+        </div>
+        <div class="field">
+          <label for="extra">Kelebihan Qty</label>
+          <input type="number" id="extra" min="0" step="1" placeholder="0" value="0" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn">Tambah</button>
+          <button type="button" class="btn btn-ghost" id="cancelBtn" hidden>Batal</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Filter kategori -->
+    <section class="filter-tabs" id="filterTabs">
+      <button class="tab active" data-cat="all">Semua <span class="count" id="countAll">0</span></button>
+      <button class="tab" data-cat="dewasa">Dewasa <span class="count" id="countDewasa">0</span></button>
+      <button class="tab" data-cat="anak">Anak <span class="count" id="countAnak">0</span></button>
+    </section>
+
+    <!-- Toolbar -->
+    <section class="toolbar">
+      <input type="search" id="searchInput" class="search" placeholder="🔍 Cari design atau warna..." />
+      <div class="toolbar-actions">
+        <button class="btn btn-outline" id="exportBtn">Ekspor CSV</button>
+        <button class="btn btn-danger-outline" id="clearBtn">Hapus Semua</button>
+      </div>
+    </section>
+
+    <!-- Tabel data -->
+    <section class="card table-card">
+      <div class="table-wrapper">
+        <table id="kaosTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th data-sort="design">Nama Design</th>
+              <th data-sort="color">Warna</th>
+              <th data-sort="category">Kategori</th>
+              <th class="num" data-sort="qty">Jumlah</th>
+              <th class="num" data-sort="extra">Kelebihan</th>
+              <th class="num" data-sort="total">Total</th>
+              <th class="actions-col">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <p>Belum ada data. Tambahkan kaos pertama Anda di atas. 👆</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <small>Data tersimpan otomatis di browser Anda (localStorage).</small>
+    </footer>
+  </div>
+
+  <script>
+    // ====== Penghitung Kaos ======
+    // Data model: { id, design, color, qty, extra }
+    // Total per item = qty + extra
+
+    const STORAGE_KEY = "penghitung-kaos-data";
+
+    // Peta nama warna umum -> kode warna untuk titik indikator
+    const COLOR_MAP = {
+      hitam: "#111827",
+      putih: "#f9fafb",
+      merah: "#ef4444",
+      biru: "#3b82f6",
+      hijau: "#22c55e",
+      kuning: "#eab308",
+      oranye: "#f97316",
+      orange: "#f97316",
+      ungu: "#a855f7",
+      "pink": "#ec4899",
+      "merah muda": "#ec4899",
+      abu: "#9ca3af",
+      "abu-abu": "#9ca3af",
+      coklat: "#92400e",
+      "cokelat": "#92400e",
+      navy: "#1e3a8a",
+      maroon: "#7f1d1d",
+      tosca: "#14b8a6",
+      cream: "#fef3c7",
+      krem: "#fef3c7",
+      emas: "#d4af37",
+      gold: "#d4af37",
+      silver: "#cbd5e1",
+    };
+
+    let data = [];
+    let sortState = { key: "design", dir: 1 };
+    let activeCategory = "all";
+
+    const CATEGORY_LABEL = { dewasa: "Dewasa", anak: "Anak" };
+
+    // ---- Elemen DOM ----
+    const form = document.getElementById("kaosForm");
+    const editIdInput = document.getElementById("editId");
+    const designInput = document.getElementById("design");
+    const colorInput = document.getElementById("color");
+    const categoryInput = document.getElementById("category");
+    const qtyInput = document.getElementById("qty");
+    const extraInput = document.getElementById("extra");
+    const submitBtn = document.getElementById("submitBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const formTitle = document.getElementById("formTitle");
+    const tableBody = document.getElementById("tableBody");
+    const emptyState = document.getElementById("emptyState");
+    const searchInput = document.getElementById("searchInput");
+    const exportBtn = document.getElementById("exportBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const colorList = document.getElementById("colorList");
+    const filterTabs = document.getElementById("filterTabs");
+
+    // ---- Penyimpanan ----
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        data = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        data = [];
+      }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // ---- Util ----
+    function colorDot(name) {
+      const key = (name || "").trim().toLowerCase();
+      return COLOR_MAP[key] || "#d1d5db";
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function itemTotal(item) {
+      return (Number(item.qty) || 0) + (Number(item.extra) || 0);
+    }
+
+    // ---- Render ----
+    function render() {
+      const term = searchInput.value.trim().toLowerCase();
+
+      // Data sesuai kategori aktif (dasar untuk ringkasan)
+      const categoryData = data.filter(
+        (item) => activeCategory === "all" || item.category === activeCategory
+      );
+
+      // Tambahan filter pencarian (untuk tampilan tabel)
+      let rows = categoryData.filter((item) => {
+        if (!term) return true;
+        return (
+          item.design.toLowerCase().includes(term) ||
+          item.color.toLowerCase().includes(term)
+        );
+      });
+
+      // Sorting
+      rows.sort((a, b) => {
+        let va, vb;
+        if (sortState.key === "total") {
+          va = itemTotal(a);
+          vb = itemTotal(b);
+        } else {
+          va = a[sortState.key];
+          vb = b[sortState.key];
+        }
+        if (typeof va === "string") va = va.toLowerCase();
+        if (typeof vb === "string") vb = vb.toLowerCase();
+        if (va < vb) return -1 * sortState.dir;
+        if (va > vb) return 1 * sortState.dir;
+        return 0;
+      });
+
+      tableBody.innerHTML = "";
+      rows.forEach((item, index) => {
+        const cat = item.category || "dewasa";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.design)}</td>
+          <td>
+            <span class="color-tag">
+              <span class="color-dot" style="background:${colorDot(item.color)}"></span>
+              ${escapeHtml(item.color)}
+            </span>
+          </td>
+          <td><span class="badge badge-${cat}">${CATEGORY_LABEL[cat] || cat}</span></td>
+          <td class="num">${item.qty}</td>
+          <td class="num">${item.extra}</td>
+          <td class="num total-cell">${itemTotal(item)}</td>
+          <td class="actions-col">
+            <div class="row-actions">
+              <button class="icon-btn edit" data-id="${item.id}" title="Edit">✏️ Edit</button>
+              <button class="icon-btn delete" data-id="${item.id}" title="Hapus">🗑️ Hapus</button>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+
+      emptyState.style.display = rows.length === 0 ? "block" : "none";
+
+      updateSummary(categoryData);
+      updateCounts();
+      updateColorSuggestions();
+    }
+
+    function updateSummary(rows) {
+      const totalItems = rows.length;
+      const totalQty = rows.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+      const totalExtra = rows.reduce((s, i) => s + (Number(i.extra) || 0), 0);
+      document.getElementById("totalItems").textContent = totalItems;
+      document.getElementById("totalQty").textContent = totalQty;
+      document.getElementById("totalExtra").textContent = totalExtra;
+      document.getElementById("grandTotal").textContent = totalQty + totalExtra;
+    }
+
+    function updateCounts() {
+      document.getElementById("countAll").textContent = data.length;
+      document.getElementById("countDewasa").textContent = data.filter(
+        (i) => (i.category || "dewasa") === "dewasa"
+      ).length;
+      document.getElementById("countAnak").textContent = data.filter(
+        (i) => i.category === "anak"
+      ).length;
+    }
+
+    function updateColorSuggestions() {
+      const colors = [...new Set(data.map((i) => i.color))];
+      colorList.innerHTML = colors
+        .map((c) => `<option value="${escapeHtml(c)}"></option>`)
+        .join("");
+    }
+
+    // ---- Aksi form ----
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const design = designInput.value.trim();
+      const color = colorInput.value.trim();
+      const category = categoryInput.value;
+      const qty = parseInt(qtyInput.value, 10) || 0;
+      const extra = parseInt(extraInput.value, 10) || 0;
+
+      if (!design || !color) return;
+
+      const editId = editIdInput.value;
+      if (editId) {
+        const item = data.find((d) => d.id === editId);
+        if (item) {
+          item.design = design;
+          item.color = color;
+          item.category = category;
+          item.qty = qty;
+          item.extra = extra;
+        }
+        resetForm();
+      } else {
+        data.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          design,
+          color,
+          category,
+          qty,
+          extra,
+        });
+      }
+
+      save();
+      render();
+      form.reset();
+      extraInput.value = "0";
+      designInput.focus();
+    });
+
+    cancelBtn.addEventListener("click", resetForm);
+
+    function resetForm() {
+      editIdInput.value = "";
+      form.reset();
+      categoryInput.value = "dewasa";
+      extraInput.value = "0";
+      submitBtn.textContent = "Tambah";
+      formTitle.textContent = "Tambah Data Kaos";
+      cancelBtn.hidden = true;
+    }
+
+    function startEdit(id) {
+      const item = data.find((d) => d.id === id);
+      if (!item) return;
+      editIdInput.value = item.id;
+      designInput.value = item.design;
+      colorInput.value = item.color;
+      categoryInput.value = item.category || "dewasa";
+      qtyInput.value = item.qty;
+      extraInput.value = item.extra;
+      submitBtn.textContent = "Simpan Perubahan";
+      formTitle.textContent = "Edit Data Kaos";
+      cancelBtn.hidden = false;
+      designInput.focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function deleteItem(id) {
+      const item = data.find((d) => d.id === id);
+      if (!item) return;
+      if (confirm(`Hapus "${item.design}" (${item.color})?`)) {
+        data = data.filter((d) => d.id !== id);
+        save();
+        render();
+      }
+    }
+
+    // Delegasi event untuk tombol di tabel
+    tableBody.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      if (btn.classList.contains("edit")) startEdit(id);
+      if (btn.classList.contains("delete")) deleteItem(id);
+    });
+
+    // Pencarian
+    searchInput.addEventListener("input", render);
+
+    // Filter kategori (tab)
+    filterTabs.addEventListener("click", (e) => {
+      const tab = e.target.closest(".tab");
+      if (!tab) return;
+      activeCategory = tab.dataset.cat;
+      filterTabs.querySelectorAll(".tab").forEach((t) =>
+        t.classList.toggle("active", t === tab)
+      );
+      render();
+    });
+
+    // Sorting kolom
+    document.querySelectorAll("th[data-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        const key = th.dataset.sort;
+        if (sortState.key === key) {
+          sortState.dir *= -1;
+        } else {
+          sortState.key = key;
+          sortState.dir = 1;
+        }
+        render();
+      });
+    });
+
+    // Hapus semua
+    clearBtn.addEventListener("click", () => {
+      if (data.length === 0) return;
+      if (confirm("Hapus SEMUA data kaos? Tindakan ini tidak bisa dibatalkan.")) {
+        data = [];
+        save();
+        render();
+      }
+    });
+
+    // Ekspor CSV (mengikuti filter & pencarian yang aktif)
+    exportBtn.addEventListener("click", () => {
+      const term = searchInput.value.trim().toLowerCase();
+      const rows = data.filter((item) => {
+        const matchCat = activeCategory === "all" || (item.category || "dewasa") === activeCategory;
+        const matchTerm =
+          !term ||
+          item.design.toLowerCase().includes(term) ||
+          item.color.toLowerCase().includes(term);
+        return matchCat && matchTerm;
+      });
+
+      if (rows.length === 0) {
+        alert("Belum ada data untuk diekspor.");
+        return;
+      }
+      const header = ["Nama Design", "Warna", "Kategori", "Jumlah", "Kelebihan", "Total"];
+      const lines = rows.map((i) =>
+        [i.design, i.color, CATEGORY_LABEL[i.category] || "Dewasa", i.qty, i.extra, itemTotal(i)]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",")
+      );
+      const totalQty = rows.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+      const totalExtra = rows.reduce((s, i) => s + (Number(i.extra) || 0), 0);
+      lines.push(
+        ["TOTAL", "", "", totalQty, totalExtra, totalQty + totalExtra]
+          .map((v) => `"${v}"`)
+          .join(",")
+      );
+      const csv = [header.join(","), ...lines].join("\n");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const suffix = activeCategory === "all" ? "semua" : activeCategory;
+      a.download = `data-kaos-${suffix}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ---- Inisialisasi ----
+    load();
+    render();
+  </script>
+</body>
+</html>
